@@ -1,0 +1,22 @@
+{
+  "name": "bugbot",
+  "version": "0.0.1",
+  "description": "An interactive bot for reporting issues",
+  "main": "bugbot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BotsBots/BugBot.git"
+  },
+  "keywords": [
+    "chatbot"
+  ],
+  "author": "Ian Moore",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/BotsBots/BugBot/issues"
+  },
+  "homepage": "https://github.com/BotsBots/BugBot#readme"
+}
