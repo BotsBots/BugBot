@@ -18,5 +18,9 @@
   "bugs": {
     "url": "https://github.com/BotsBots/BugBot/issues"
   },
-  "homepage": "https://github.com/BotsBots/BugBot#readme"
+  "homepage": "https://github.com/BotsBots/BugBot#readme",
+  "dependencies": {
+    "js-yaml": "^3.6.1",
+    "request": "^2.74.0"
+  }
 }
