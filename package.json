@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/BotsBots/BugBot#readme",
   "dependencies": {
+    "botkit": "^0.2.2",
     "js-yaml": "^3.6.1",
     "request": "^2.74.0"
   }

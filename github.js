@@ -9,7 +9,7 @@ const request = require('request');
 /**
  * Returns information on each of the users repositories
  */
-exports.getUserRepos = (token) => {
+exports.getUserRepos = (token, callback) => {
   let options = {
     url: 'https://api.github.com/user/repos',
     method: 'GET',
@@ -23,6 +23,24 @@ exports.getUserRepos = (token) => {
   // Send a http request to url and specify a callback that will be called upon its return.
 	request(options, (error, response, body, callback) => {
      callback(JSON.parse(body));
+  });
+}
+
+exports.getAuthUser = (token, callback) => {
+  let options = {
+    url: 'https://api.github.com/user',
+    method: 'GET',
+    headers: {
+      'User-Agent': 'EnableIssues',
+      'content-type': 'application/json',
+      'Authorization': 'token ' + token
+    }
+  };
+
+  // Send a http request to url and specify a callback that will be called upon its return.
+	request(options, (error, response, body, callback) => {
+
+    callback(JSON.parse(body));
   });
 }
 

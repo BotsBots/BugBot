@@ -8,6 +8,7 @@ const file = require('fs');
 const yaml = require('js-yaml');
 
 const github = require('./github.js');
+const slack = require('./slack.js');
 
 /* parses the settings.yml file */
 function readSettings() {
@@ -21,10 +22,14 @@ function readSettings() {
 function main() {
   let settings = readSettings();
 
-  github.getIssues(settings.token, 'BotsBots', 'BugBot', (issues) => {
+  /*github.getIssues(settings.github.token, 'BotsBots', 'BugBot', (issues) => {
     console.log(issues);
-  });
+  });*/
 
   /*createIssue(settings.token, 'BotsBots', 'BugBot', 'test issue',
     'this issue created by bugbot through the github API');*/
+
+  slack.start(settings.slack.token);
 }
+
+main();
