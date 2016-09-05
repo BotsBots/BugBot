@@ -39,7 +39,7 @@ exports.getAuthUser = (token, callback) => {
 
   // Send a http request to url and specify a callback that will be called upon its return.
 	request(options, (error, response, body, callback) => {
-
+    if (response)
     callback(JSON.parse(body));
   });
 }
