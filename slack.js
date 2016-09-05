@@ -40,13 +40,20 @@ exports.start = (token) => {
         token = response.text;
         convo.next();
 
-        //save the token under the user's id
-        controller.storage.users.save({id: message.user, token: token}, (err) => {
-          if (err)
-            convo.say('Sorry, I was unable to save your token.');
-          else convo.say('Your token has been saved. You should now be able to create issues');
+        github.getAuthUser(token, (response) => {
+          convo.next();
+          if (response.message == 'Bad credentials')
+            convo.say('Your token appears to be invalid');
+          else {
+            controller.storage.users.save({id: message.user, token: token}, (err) => {
+              if (err) convo.say('Sorry, I was unable to save your token.');
+              else convo.say("You are now authenticated as the github user: " + response.login);
+            });
+          }
         });
+
       });
+
     });
   });
 

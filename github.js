@@ -21,11 +21,14 @@ exports.getUserRepos = (token, callback) => {
   };
 
   // Send a http request to url and specify a callback that will be called upon its return.
-	request(options, (error, response, body, callback) => {
+	request(options, (error, response, body) => {
      callback(JSON.parse(body));
   });
 }
 
+/**
+ * Returns details of the currently authenticated user
+ */
 exports.getAuthUser = (token, callback) => {
   let options = {
     url: 'https://api.github.com/user',
@@ -38,9 +41,9 @@ exports.getAuthUser = (token, callback) => {
   };
 
   // Send a http request to url and specify a callback that will be called upon its return.
-	request(options, (error, response, body, callback) => {
+	request(options, (error, response, body) => {
     if (response)
-    callback(JSON.parse(body));
+      callback(JSON.parse(body));
   });
 }
 
