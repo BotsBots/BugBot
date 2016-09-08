@@ -57,33 +57,51 @@ exports.start = (token) => {
     });
   });
 
+  /**
+   * Prevent user from trying to authorize from a public chat
+   */
+  controller.hears('authorize', ['mention'], (bot,message) => {
+    bot.reply('Please message me in a private chat to authorize your user');
+  });
+
 
   /**
    * Executes when the controller hears the message new_issue
    */
   controller.hears('new issue',['direct_message', 'mention', 'direct_mention'], (bot,message) => {
-    let issue = {};
-    bot.startConversation(message, (err, convo) => {
-      convo.ask('What project would you like to report an issue for?', (response, convo) => {
-        issue.project = response.text;
-        convo.next();
-      });
-
-      convo.ask('What would you like to title the issue?', (response, convo) => {
-        issue.title = response.text;
-        convo.next();
-      });
-
-      convo.ask('Give a description for the issue', (response, convo) => {
-        issue.description = response.text;
-        convo.next();
-
-        convo.say('Thank you! I will now create your issue');
-        //github.createIssue(token, owner, repo, title, body);
-        console.log(issue.project + ', ' + issue.title + '\n' + issue.description);
-      });
+    controller.storage.users.get(message.user, (err, user_data) => {
+      if (err)
+        bot.reply('Sorry, your account does not appear to be authorized with github\
+        \nPlease send me the \'authorize\' command in a private chat.');
+      else
+        createIssue(bot,message,user_data.token);
     });
   });
 
+}
 
+function createIssue(bot,message,token) {
+  let issue = {};
+  bot.startConversation(message, (err, convo) => {
+    convo.ask('What project would you like to report an issue for?', (response, convo) => {
+      issue.owner = response.text.split('/')[0];
+      issue.project = response.text.split('/')[1];
+      convo.next();
+    });
+
+    convo.ask('What would you like to title the issue?', (response, convo) => {
+      issue.title = response.text;
+      convo.next();
+    });
+
+    convo.ask('Give a description for the issue', (response, convo) => {
+      issue.description = response.text;
+      convo.next();
+
+      convo.say('Thank you! I will now create your issue');
+      github.createIssue(issue.token, issue.owner, issue.repo, issue.title, issue.body);
+      console.log(issue.owner + ', ' + issue.project + ', ' +
+          issue.title + '\n' + issue.description);
+    });
+  });
 }
