@@ -38,7 +38,6 @@ exports.start = (token) => {
 
       convo.ask('Please provide your token below', (response, convo) => {
         token = response.text;
-        convo.next();
 
         github.getAuthUser(token, (response) => {
           convo.next();
@@ -85,7 +84,7 @@ function createIssue(bot,message,token) {
   bot.startConversation(message, (err, convo) => {
     convo.ask('What project would you like to report an issue for?', (response, convo) => {
       issue.owner = response.text.split('/')[0];
-      issue.project = response.text.split('/')[1];
+      issue.repo = response.text.split('/')[1];
       convo.next();
     });
 
@@ -95,13 +94,15 @@ function createIssue(bot,message,token) {
     });
 
     convo.ask('Give a description for the issue', (response, convo) => {
-      issue.description = response.text;
+      issue.body = response.text;
       convo.next();
 
       convo.say('Thank you! I will now create your issue');
-      github.createIssue(issue.token, issue.owner, issue.repo, issue.title, issue.body);
-      console.log(issue.owner + ', ' + issue.project + ', ' +
-          issue.title + '\n' + issue.description);
+      github.createIssue(token, issue.owner, issue.repo,
+          issue.title, issue.body, (response) => {
+
+        console.log(response);
+      });
     });
   });
 }
