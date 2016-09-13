@@ -79,7 +79,8 @@ exports.createIssue = (token, owner, repo, title, body, callback) => {
       'content-type': 'application/json',
       'Authorization': 'token ' + token
     },
-    json: {
+    json: true,
+    body: {
       'title': title,
       'body': body
     }

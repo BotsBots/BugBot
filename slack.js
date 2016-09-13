@@ -33,7 +33,8 @@ exports.start = (token) => {
    */
   controller.hears('authorize', ['direct_message'], (bot, message) => {
     bot.startConversation(message, (err, convo) => {
-      convo.say('I will need a github token to create issue on your behalf');
+      convo.say('I will need a github personal access token to create issue on your behalf.\
+      This token must have repo access enabled');
       convo.next();
 
       convo.ask('Please provide your token below', (response, convo) => {
@@ -79,6 +80,14 @@ exports.start = (token) => {
 
 }
 
+/**
+ * A helper function for canceling the current action
+ */
+function cancelAction(convo) {
+  convo.say('Canceling action');
+  //TODO end the conversation
+}
+
 function createIssue(bot,message,token) {
   let issue = {};
   bot.startConversation(message, (err, convo) => {
@@ -97,11 +106,10 @@ function createIssue(bot,message,token) {
       issue.body = response.text;
       convo.next();
 
-      convo.say('Thank you! I will now create your issue');
       github.createIssue(token, issue.owner, issue.repo,
           issue.title, issue.body, (response) => {
+        convo.say('Thank you! Your issue is available at ' + response.url);
 
-        console.log(response);
       });
     });
   });
