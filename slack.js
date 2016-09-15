@@ -70,7 +70,7 @@ exports.start = (token) => {
    */
   controller.hears('new issue',['direct_message', 'mention', 'direct_mention'], (bot,message) => {
     controller.storage.users.get(message.user, (err, user_data) => {
-      if (err)
+      if (user_data == undefined)
         bot.reply('Sorry, your account does not appear to be authorized with github\
         \nPlease send me the \'authorize\' command in a private chat.');
       else
@@ -91,7 +91,8 @@ function cancelAction(convo) {
 function createIssue(bot,message,token) {
   let issue = {};
   bot.startConversation(message, (err, convo) => {
-    convo.ask('What project would you like to report an issue for?', (response, convo) => {
+    convo.ask('What project would you like to report an issue for?\n\
+    This should be in the form owner/repo, I.E., BotsBots/bugbot', (response, convo) => {
       issue.owner = response.text.split('/')[0];
       issue.repo = response.text.split('/')[1];
       convo.next();
@@ -108,9 +109,11 @@ function createIssue(bot,message,token) {
 
       github.createIssue(token, issue.owner, issue.repo,
           issue.title, issue.body, (response) => {
-        convo.say('Thank you! Your issue is available at ' + response.url);
-
+        //convert from the API url to the clickable url
+        issueUrl = 'https://github.' + response.url.split('.')[2]
+        convo.say('Thank you! Your issue is available at ' + issueUrl);
       });
+
     });
   });
 }
