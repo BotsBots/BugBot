@@ -29,6 +29,19 @@ exports.start = (token) => {
     }
   });*/
 
+  controller.hears('help', ['direct_message', 'slash_command'], (bot, message) => {
+    database.isAuthorized(message.user, (err, authorized) => {
+      bot.reply(message, 'Hello, I am BugBot. I can help you report issues to Github\
+      \nType \'new issue\' to report an issue to GitHub.');
+      if (authorized)
+        bot.reply(message, 'You are currently authenticated with Github. You can type\
+        \'revoke\' to revoke your access');
+      else
+        bot.reply(message, 'You are not currently authenticated with Github. You can type\
+        \'authorize\' to begin the authenticate to your github account.');
+    });
+  });
+
   /**
    * Allows the user to authorize their github
    */
