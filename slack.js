@@ -29,16 +29,16 @@ exports.start = (token) => {
     }
   });*/
 
-  controller.hears('help', ['direct_message', 'slash_command'], (bot, message) => {
+  controller.hears('help', ['direct_message'], (bot, message) => {
     database.isAuthorized(message.user, (err, authorized) => {
       bot.reply(message, 'Hello, I am BugBot. I can help you report issues to Github\
       \nType \'new issue\' to report an issue to GitHub.');
       if (authorized)
         bot.reply(message, 'You are currently authenticated with Github. You can type\
-        \'revoke\' to revoke your access');
+  \'revoke\' to revoke your access');
       else
         bot.reply(message, 'You are not currently authenticated with Github. You can type\
-        \'authorize\' to begin the authenticate to your github account.');
+  \'authorize\' to begin the authenticate to your github account.');
     });
   });
 
@@ -57,7 +57,7 @@ exports.start = (token) => {
   /**
    * Prevent user from trying to authorize from a public chat
    */
-  controller.hears('authorize', ['mention'], (bot,message) => {
+  controller.hears('authorize', ['mention', 'direct_mention'], (bot,message) => {
     bot.reply(message, 'Please message me in a private chat to authorize your user');
   });
 
@@ -65,7 +65,7 @@ exports.start = (token) => {
   /**
    * Executes when the controller hears the message new_issue
    */
-  controller.hears('new issue',['direct_message', 'mention', 'direct_mention'], (bot,message) => {
+  controller.hears('new issue',['direct_message', 'direct_mention'], (bot,message) => {
     database.isAuthorized(message.user, (err, authorized) => {
       if (err)
         bot.reply(message, 'There appears to be an error with my database. My appologies, please\
@@ -131,7 +131,7 @@ function createIssue(bot,message,token) {
           convo.say('Sorry I could not find the project: ' + issue.owner + '/' + issue.repo);
         else {
           //convert from the API url to the clickable url
-          issueUrl = 'https://github.' + response.url.split('.')[2]
+          issueUrl = 'https://github.com/' + response.url.split('repos/')[1];
           convo.say('Thank you! Your issue is available at ' + issueUrl);
         }
       });
