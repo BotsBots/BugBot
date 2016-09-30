@@ -110,7 +110,7 @@ function createIssue(bot,message,token) {
   let issue = {};
   bot.startConversation(message, (err, convo) => {
     convo.ask('What project would you like to report an issue for?\n\
-    This should be in the form owner/repo, I.E., BotsBots/bugbot', (response, convo) => {
+    This should be in the form owner/repo, I.E., octocat/hello-world', (response, convo) => {
       issue.owner = response.text.split('/')[0];
       issue.repo = response.text.split('/')[1];
       convo.next();
