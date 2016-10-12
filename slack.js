@@ -18,21 +18,10 @@ exports.start = (token) => {
     'token': token
   }).startRTM()
 
-  /*controller.on('slash_command', (bot,message) => {
-    if (message.text == '/report_issue') {
-      bot.startConversation(message, (err, convo) => {
-        convo.ask('What project would you like to report an issue for?', (response, convo) => {
-          let project = response.text;
-
-        });
-      });
-    }
-  });*/
-
   controller.hears('help', ['direct_message'], (bot, message) => {
     database.isAuthorized(message.user, (err, authorized) => {
       bot.reply(message, 'Hello, I am BugBot. I can help you report issues to Github\
-      \nType \'new issue\' to report an issue to GitHub.');
+      \nType \'new issue\' to report an issue or type \'report\' for guided issue creation.');
       if (authorized)
         bot.reply(message, 'You are currently authenticated with Github. You can type\
   \'revoke\' to revoke your access');
@@ -76,6 +65,21 @@ exports.start = (token) => {
       else
         database.getUser(message.user, (err, token, githubUser) => {
           createIssue(bot, message, token);
+        });
+    });
+  });
+
+  controller.hears(['report', 'report bug'], ['direct_message', 'direct_mention'], (bot, message) => {
+    database.isAuthorized(message.user, (err, authorized) => {
+      if (err)
+        bot.reply(message, 'There appears to be an error with my database. My appologies, please\
+        contact the maintainer of this bot.');
+      else if (!authorized)
+        bot.reply(message, 'Sorry, your account does not appear to be authorized with github\
+        \nPlease send me the \'authorize\' command in a private chat.');
+      else
+        database.getUser(message.user, (err, token, githubUser) => {
+          reportIssue(bot, message, token);
         });
     });
   });
@@ -136,6 +140,66 @@ function createIssue(bot,message,token) {
         }
       });
     });
+  });
+}
+
+/**
+ * This function walks the user through reporting an issue
+ * by asking specific questions.
+ */
+function reportIssue(bot, message, token) {
+  let issue = {};
+  bot.startConversation(message, (err, convo) => {
+    convo.ask('What project would you like to report an issue for?\n\
+    This should be in the form owner/repo, I.E., octocat/hello-world', (response, convo) => {
+      issue.owner = response.text.split('/')[0];
+      issue.repo = response.text.split('/')[1];
+      convo.next();
+    });
+
+    convo.ask('What would you like to call the issue? This should be just a few words.', (response, convo) => {
+      issue.title = response.text;
+      convo.next();
+    });
+
+    convo.ask('What were you doing when the issue occurred?\
+    Try to help the troubleshooter recreate the issue.', (response, convo) => {
+      issue.reproduce = response.text;
+      convo.next();
+    });
+
+    convo.ask('Now, what happened when the program crashed? Be sure to include any error codes.', (response, convo) => {
+      issue.crash = response.text;
+      convo.next();
+    });
+
+    convo.ask('What version of the software were you running?.', (response, convo) => {
+      issue.version = response.text;
+      convo.next();
+    });
+
+    convo.ask('Now, tell us about the device where the error occurred What \
+    operating system is it running? (I.E., Windows 7, Android, etc)', (response, convo) => {
+      issue.os = response.text;
+
+      //compile the issue report
+      issue.body = `#### crash report\n${issue.crash}\n#### how to reproduce\n${issue.reproduce}\n\
+    version: ${issue.version}\noperating system: ${issue.os}`;
+      convo.next();
+
+      github.createIssue(token, issue.owner, issue.repo,
+        issue.title, issue.body, (response) => {
+        convo.next();
+        if (response.message == 'Not Found')
+           convo.say('Sorry I could not find the project: ' + issue.owner + '/' + issue.repo);
+        else {
+          //convert from the API url to the clickable url
+          issueUrl = 'https://github.com/' + response.url.split('repos/')[1];
+          convo.say('Thank you! Your issue is available at ' + issueUrl);
+        }
+      });
+    });
+
   });
 }
 
