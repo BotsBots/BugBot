@@ -1,0 +1,7 @@
+[default]
+name=Default
+device=local
+runtime=host
+config-opts=
+prefix=/home/ianmoore/.cache/gnome-builder/install/BugBot/host
+default=true

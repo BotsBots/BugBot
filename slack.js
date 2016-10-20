@@ -101,10 +101,19 @@ exports.start = (token) => {
 
 /**
  * A helper function for canceling the current action
+ * the callback is what gets called if the user does not confirm the cancellation
  */
-function cancelAction(convo) {
-  convo.say('Canceling action');
-  //TODO end the conversation
+function cancelAction(bot, convo, callback) {
+  convo.ask('Are you sure you want to cancel?', [
+    { pattern: bot.utterances.yes, callback: (response, convo) => {
+      convo.say('canceling action');
+      convo.next();
+    }},
+    { pattern: bot.utterances.no, callback: (response, convo) => {
+      callback(null, convo);
+      convo.next();
+    }}
+  ]);
 }
 
 /**
@@ -112,35 +121,82 @@ function cancelAction(convo) {
  */
 function createIssue(bot,message,token) {
   let issue = {};
-  bot.startConversation(message, (err, convo) => {
+
+  let askProject = function(err, convo) {
     convo.ask('What project would you like to report an issue for?\n\
-    This should be in the form owner/repo, I.E., octocat/hello-world', (response, convo) => {
-      issue.owner = response.text.split('/')[0];
-      issue.repo = response.text.split('/')[1];
-      convo.next();
-    });
+  This should be in the form owner/repo, I.E., octocat/hello-world', (response, convo) => {
 
-    convo.ask('What would you like to title the issue?', (response, convo) => {
-      issue.title = response.text;
-      convo.next();
-    });
-
-    convo.ask('Give a description for the issue', (response, convo) => {
-      issue.body = response.text;
-
-      github.createIssue(token, issue.owner, issue.repo,
-          issue.title, issue.body, (response) => {
+      //error check
+      if (response.text == 'cancel') {
+        cancelAction(bot, convo, askProject);
         convo.next();
-        if (response.message == 'Not Found')
-          convo.say('Sorry I could not find the project: ' + issue.owner + '/' + issue.repo);
-        else {
-          //convert from the API url to the clickable url
-          issueUrl = 'https://github.com/' + response.url.split('repos/')[1];
-          convo.say('Thank you! Your issue is available at ' + issueUrl);
-        }
-      });
+      } else if (response.text.length == 0) {
+        convo.say('You must specify a project');
+        askProject(null, convo);
+        convo.next();
+      } else if (response.text.indexOf('/') == -1 || response.text.split('/').length != 2) {
+        convo.say('You need to specify the porject in the format owner/project.');
+        askProject(null, convo);
+        convo.next();
+      } else {
+        //set the fields
+        issue.owner = response.text.split('/')[0];
+        issue.repo = response.text.split('/')[1];
+
+        //call the next function
+        askTitle(response, convo);
+        convo.next();
+      }
     });
-  });
+  }
+
+  let askTitle = function(prevResponse, convo) {
+    convo.ask('What would you like to title the issue?', (response, convo) => {
+
+      //error check
+      if (response.text == 'cancel') {
+        cancelAction(bot, convo, askTitle);
+        convo.next();
+      } else if (response.text.length == 0) {
+        convo.say('A title is required');
+        askTitle(response, convo);
+        convo.next();
+      } else if (response.text.length > 80) {
+        convo.say('That\'s a bit long for a title. Can you try to be more concise?');
+        askTitle(response, convo);
+        convo.next();
+      } else {
+        issue.title = response.text;
+        askDescription(response, convo);
+        convo.next();
+      }
+    });
+  }
+
+  let askDescription = function(prevResponse, convo) {
+    convo.ask('Give a description for the issue', (response, convo) => {
+      if (response.text == 'cancel') {
+        cancelAction(bot, convo, askDescription);
+        convo.next();
+      } else {
+        issue.body = response.text;
+
+        github.createIssue(token, issue.owner, issue.repo,
+          issue.title, issue.body, (response) => {
+          convo.next();
+          if (response.message == 'Not Found')
+            convo.say('Sorry I could not find the project: ' + issue.owner + '/' + issue.repo);
+          else {
+            //convert from the API url to the clickable url
+            issueUrl = 'https://github.com/' + response.url.split('repos/')[1];
+            convo.say('Thank you! Your issue is available at ' + issueUrl);
+          }
+        });
+      }
+    });
+  }
+
+  bot.startConversation(message, askProject);
 }
 
 /**
@@ -158,6 +214,12 @@ function reportIssue(bot, message, token) {
     });
 
     convo.ask('What would you like to call the issue? This should be just a few words.', (response, convo) => {
+      /*while(response.text.length > 80) {
+        convo.next();
+        convo.ask('That\'s a bit too long for a title. Can you be more concise?');
+        //TODO figure out how to loop on constraints
+      }*/
+
       issue.title = response.text;
       convo.next();
     });
@@ -223,9 +285,7 @@ function authorizeUser(bot, message) {
           });
         }
       });
-
     });
-
   });
 }
 
@@ -255,7 +315,6 @@ function revokeAccess(bot, message) {
           convo.say('Never mind then');
         }
       });
-
     });
   });
 }
