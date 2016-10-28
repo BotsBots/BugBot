@@ -205,64 +205,142 @@ function createIssue(bot,message,token) {
  */
 function reportIssue(bot, message, token) {
   let issue = {};
-  bot.startConversation(message, (err, convo) => {
+
+  let askProject = function(err, convo) {
     convo.ask('What project would you like to report an issue for?\n\
-    This should be in the form owner/repo, I.E., octocat/hello-world', (response, convo) => {
-      issue.owner = response.text.split('/')[0];
-      issue.repo = response.text.split('/')[1];
-      convo.next();
-    });
+  This should be in the form owner/repo, I.E., octocat/hello-world', (response, convo) => {
 
-    convo.ask('What would you like to call the issue? This should be just a few words.', (response, convo) => {
-      /*while(response.text.length > 80) {
+      //error check
+      if (response.text == 'cancel') {
+        cancelAction(bot, convo, askProject);
         convo.next();
-        convo.ask('That\'s a bit too long for a title. Can you be more concise?');
-        //TODO figure out how to loop on constraints
-      }*/
+      } else if (response.text.length == 0) {
+        convo.say('You must specify a project');
+        askProject(null, convo);
+        convo.next();
+      } else if (response.text.indexOf('/') == -1 || response.text.split('/').length != 2) {
+        convo.say('You need to specify the porject in the format owner/project.');
+        askProject(null, convo);
+        convo.next();
+      } else {
+        //set the fields
+        issue.owner = response.text.split('/')[0];
+        issue.repo = response.text.split('/')[1];
 
-      issue.title = response.text;
-      convo.next();
+        //call the next function
+        askTitle(response, convo);
+        convo.next();
+      }
     });
+  }
 
+  let askTitle = function(prevResponse, convo) {
+    convo.ask('What would you like to title the issue?', (response, convo) => {
+
+      //error check
+      if (response.text == 'cancel') {
+        cancelAction(bot, convo, askTitle);
+        convo.next();
+      } else if (response.text.length == 0) {
+        convo.say('A title is required');
+        askTitle(response, convo);
+        convo.next();
+      } else if (response.text.length > 80) {
+        convo.say('That\'s a bit long for a title. Can you try to be more concise?');
+        askTitle(response, convo);
+        convo.next();
+      } else {
+        issue.title = response.text;
+        askReproduce(response, convo);
+        convo.next();
+      }
+    });
+  }
+
+  let askReproduce = function(prevResponse, convo) {
     convo.ask('What were you doing when the issue occurred?\
     Try to help the troubleshooter recreate the issue.', (response, convo) => {
-      issue.reproduce = response.text;
-      convo.next();
-    });
 
+      //error check
+      if (response.text == 'cancel') {
+        cancelAction(bot, convo, askProject);
+        convo.next();
+      } else if (response.text.length == 0) {
+        convo.say('This is required.');
+        askReproduce(null, convo);
+        convo.next();
+      } else {
+        issue.reproduce = response.text;
+        askCrash(response, convo);
+        convo.next();
+      }
+    });
+  }
+
+  let askCrash = function(prevResponse, convo) {
     convo.ask('Now, what happened when the program crashed? Be sure to include any error codes.', (response, convo) => {
-      issue.crash = response.text;
-      convo.next();
-    });
 
+      //error check
+      if (response.text == 'cancel') {
+        cancelAction(bot, convo, askProject);
+        convo.next();
+      } else if (response.text.length == 0) {
+        convo.say('This is required.');
+        askCrash(null, convo);
+        convo.next();
+      } else {
+        issue.crash = response.text;
+        askVersion(response, convo);
+        convo.next();
+      }
+    });
+  }
+
+  let askVersion = function(prevResponse, convo) {
     convo.ask('What version of the software were you running?.', (response, convo) => {
-      issue.version = response.text;
-      convo.next();
-    });
 
+      //error check
+      if (response.text == 'cancel') {
+        cancelAction(bot, convo, askProject);
+        convo.next();
+      } else {
+        issue.version = response.text;
+        askOS(response, convo);
+        convo.next();
+      }
+    });
+  }
+
+  let askOS = function(prevResponse, convo) {
     convo.ask('Now, tell us about the device where the error occurred What \
     operating system is it running? (I.E., Windows 7, Android, etc)', (response, convo) => {
-      issue.os = response.text;
-
-      //compile the issue report
-      issue.body = `#### crash report\n${issue.crash}\n#### how to reproduce\n${issue.reproduce}\n\
-    version: ${issue.version}\noperating system: ${issue.os}`;
-      convo.next();
-
-      github.createIssue(token, issue.owner, issue.repo,
-        issue.title, issue.body, (response) => {
+      //error check
+      if (response.text == 'cancel') {
+        cancelAction(bot, convo, askProject);
         convo.next();
-        if (response.message == 'Not Found')
-           convo.say('Sorry I could not find the project: ' + issue.owner + '/' + issue.repo);
-        else {
-          //convert from the API url to the clickable url
-          issueUrl = 'https://github.com/' + response.url.split('repos/')[1];
-          convo.say('Thank you! Your issue is available at ' + issueUrl);
-        }
-      });
-    });
+      } else { //TODO potentially limit the OS to known OSes.
+        issue.os = response.text;
+        //compile the issue report
+        issue.body = `#### crash report\n${issue.crash}\n#### how to reproduce\n${issue.reproduce}\n` +
+        `version: ${issue.version}\noperating system: ${issue.os}`;
 
-  });
+        //now we upload the issue to github
+        github.createIssue(token, issue.owner, issue.repo,
+        issue.title, issue.body, (response) => {
+          convo.next();
+          if (response.message == 'Not Found')
+            convo.say('Sorry I could not find the project: ' + issue.owner + '/' + issue.repo);
+          else {
+            //convert from the API url to the clickable url
+            issueUrl = 'https://github.com/' + response.url.split('repos/')[1];
+            convo.say('Thank you! Your issue is available at ' + issueUrl);
+          }
+        });
+      }
+    });
+  }
+
+  bot.startConversation(message, askProject);
 }
 
 function authorizeUser(bot, message) {
