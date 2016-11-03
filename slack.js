@@ -84,6 +84,21 @@ exports.start = (token) => {
     });
   });
 
+  controller.hears(['new feature', 'feature'], ['direct_message', 'direct_mention'], (bot, message) => {
+    database.isAuthorized(message.user, (err, authorized) => {
+      if (err)
+        bot.reply(message, 'There appears to be an error with my database. My appologies, please\
+        contact the maintainer of this bot.');
+      else if (!authorized)
+        bot.reply(message, 'Sorry, your account does not appear to be authorized with github\
+        \nPlease send me the \'authorize\' command in a private chat.');
+      else
+        database.getUser(message.user, (err, token, githubUser) => {
+          newFeature(bot, message, token);
+        });
+    });
+  });
+
   controller.hears(['revoke', 'revoke access'], ['direct_message'], (bot,message) => {
     database.isAuthorized(message.user, (err, authorized) => {
       if (err)
@@ -334,6 +349,129 @@ function reportIssue(bot, message, token) {
             //convert from the API url to the clickable url
             issueUrl = 'https://github.com/' + response.url.split('repos/')[1];
             convo.say('Thank you! Your issue is available at ' + issueUrl);
+          }
+        });
+      }
+    });
+  }
+
+  bot.startConversation(message, askProject);
+}
+
+/**
+ * This function walks the user through creating a feature
+ * by asking specific questions.
+ */
+function newFeature(bot, message, token) {
+  let issue = {};
+
+  let askProject = function(err, convo) {
+    convo.ask('What project would you like to create a feature for?\n\
+  This should be in the form owner/repo, I.E., octocat/hello-world', (response, convo) => {
+
+      //error check
+      if (response.text == 'cancel') {
+        cancelAction(bot, convo, askProject);
+        convo.next();
+      } else if (response.text.length == 0) {
+        convo.say('You must specify a project');
+        askProject(null, convo);
+        convo.next();
+      } else if (response.text.indexOf('/') == -1 || response.text.split('/').length != 2) {
+        convo.say('You need to specify the porject in the format owner/project.');
+        askProject(null, convo);
+        convo.next();
+      } else {
+        //set the fields
+        issue.owner = response.text.split('/')[0];
+        issue.repo = response.text.split('/')[1];
+
+        //call the next function
+        askTitle(response, convo);
+        convo.next();
+      }
+    });
+  }
+
+  let askTitle = function(prevResponse, convo) {
+    convo.ask('What would you like to title the feature?', (response, convo) => {
+
+      //error check
+      if (response.text == 'cancel') {
+        cancelAction(bot, convo, askTitle);
+        convo.next();
+      } else if (response.text.length == 0) {
+        convo.say('A title is required');
+        askTitle(response, convo);
+        convo.next();
+      } else if (response.text.length > 80) {
+        convo.say('That\'s a bit long for a title. Can you try to be more concise?');
+        askTitle(response, convo);
+        convo.next();
+      } else {
+        issue.title = response.text;
+        askDescription(response, convo);
+        convo.next();
+      }
+    });
+  }
+
+  let askDescription = function(prevResponse, convo) {
+    convo.ask('Give a description of what the feature should do.', (response, convo) => {
+
+      //error check
+      if (response.text == 'cancel') {
+        cancelAction(bot, convo, askProject);
+        convo.next();
+      } else if (response.text.length == 0) {
+        convo.say('This is required.');
+        askDescription(null, convo);
+        convo.next();
+      } else {
+        issue.description = response.text;
+        askRelease(response, convo);
+        convo.next();
+      }
+    });
+  }
+
+  let askRelease = function(prevResponse, convo) {
+    convo.ask('What release or interation should this be complete by?', (response, convo) => {
+
+      //error check
+      if (response.text == 'cancel') {
+        cancelAction(bot, convo, askProject);
+        convo.next();
+      } else {
+        issue.release = response.text;
+        askPriority(response, convo);
+        convo.next();
+      }
+    });
+  }
+
+  let askPriority = function(prevResponse, convo) {
+    convo.ask('What priority is this feature?', (response, convo) => {
+      //error check
+      if (response.text == 'cancel') {
+        cancelAction(bot, convo, askProject);
+        convo.next();
+      } else { //TODO potentially limit the OS to known OSes.
+        issue.priority = response.text;
+        //compile the issue report
+        issue.body = `${issue.description}\n` +
+        `target completion: ${issue.release}\npriority: ${issue.priority}`;
+
+        //now we upload the issue to github
+        github.createIssue(token, issue.owner, issue.repo,
+        issue.title, issue.body, (response) => {
+          convo.next();
+          if (response.message == 'Not Found')
+            convo.say('Sorry I could not find the project: ' + issue.owner + '/' + issue.repo);
+          else {
+            //convert from the API url to the clickable url
+            issueUrl = 'https://github.com/' + response.url.split('repos/')[1];
+            convo.say('Thank you! Your feature is available at ' + issueUrl);
           }
         });
       }
