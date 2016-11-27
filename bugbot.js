@@ -39,7 +39,7 @@ function main() {
   let settings = readSettings();
 
   /* start the slack RTM */
-  slack.start(settings.slack.token);
+  slack.start(settings.slack.token, settings.slack.webhook);
 }
 
 main();

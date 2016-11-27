@@ -45,5 +45,5 @@ exports.isAuthorized = (userID, callback) => {
 }
 
 exports.revokeAccess = (userID, callback) => {
-  getDB().remove({_id: userID}, {}, callback(err, numRemoved));
+  getDB().remove({_id: userID}, {}, callback);
 }

@@ -7,21 +7,22 @@ let Botkit = require('botkit');
 let github = require('./github.js');
 let database = require('./database.js');
 
-exports.start = (token) => {
+exports.start = (token, webhookUrl) => {
   let controller = Botkit.slackbot({
     debug: false,
-    json_file_store: './user_data'
+    incoming_webhook: {url: webhookUrl }
   });
 
   // connect the bot to a stream of messages
   controller.spawn({
     'token': token
-  }).startRTM()
+  }).startRTM();
 
   controller.hears('help', ['direct_message'], (bot, message) => {
     database.isAuthorized(message.user, (err, authorized) => {
       bot.reply(message, 'Hello, I am BugBot. I can help you report issues to Github\
-      \nType \'new issue\' to report an issue or type \'report\' for guided issue creation.');
+      \nType \'new issue\' to report an issue or type \'report\' for guided issue creation.\
+      \nIf you want to create a new feature type \'feature\'.');
       if (authorized)
         bot.reply(message, 'You are currently authenticated with Github. You can type\
   \'revoke\' to revoke your access');
@@ -197,7 +198,7 @@ function createIssue(bot,message,token) {
         issue.body = response.text;
 
         github.createIssue(token, issue.owner, issue.repo,
-          issue.title, issue.body, (response) => {
+          issue.title, issue.body, [], (response) => {
           convo.next();
           if (response.message == 'Not Found')
             convo.say('Sorry I could not find the project: ' + issue.owner + '/' + issue.repo);
@@ -341,7 +342,7 @@ function reportIssue(bot, message, token) {
 
         //now we upload the issue to github
         github.createIssue(token, issue.owner, issue.repo,
-        issue.title, issue.body, (response) => {
+        issue.title, issue.body, ['bug'], (response) => {
           convo.next();
           if (response.message == 'Not Found')
             convo.say('Sorry I could not find the project: ' + issue.owner + '/' + issue.repo);
@@ -456,7 +457,7 @@ function newFeature(bot, message, token) {
       if (response.text == 'cancel') {
         cancelAction(bot, convo, askProject);
         convo.next();
-      } else { //TODO potentially limit the OS to known OSes.
+      } else {
         issue.priority = response.text;
         //compile the issue report
         issue.body = `${issue.description}\n` +
@@ -464,7 +465,7 @@ function newFeature(bot, message, token) {
 
         //now we upload the issue to github
         github.createIssue(token, issue.owner, issue.repo,
-        issue.title, issue.body, (response) => {
+        issue.title, issue.body, [issue.priority, issue.release, 'enhancement'], (response) => {
           convo.next();
           if (response.message == 'Not Found')
             convo.say('Sorry I could not find the project: ' + issue.owner + '/' + issue.repo);
@@ -519,13 +520,13 @@ function revokeAccess(bot, message) {
           database.revokeAccess(message.user, (err, numRemoved) => {
             if (err)
               convo.say('Your access could not be revoked due to a database error\
-              Plase contact the maintainer of this bot.');
+            Plase contact the maintainer of this bot.');
             if (numRemoved == 0)
               convo.say('Your user did not appear to be authorized. This is a bug\
-              please contact the maintainer of this bot');
+            please contact the maintainer of this bot');
             else
               convo.say('Access revoked. Send me an \'authorize\' message to reconnect\
-              to your github account.');
+            to your github account.');
           });
         } else {
           convo.say('Never mind then');

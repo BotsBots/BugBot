@@ -1,9 +1,5 @@
 # configunation file for BugBot
 
-# Put your github token here. It does not require special access
-github:
-	token: "YOUR GITHUB TOKEN HERE"
-	userid: "YOUR GITHUB USERNAME HERE"
-
 slack:
 	token: "YOUR SLACK TOKEN HERE"
+	webhookUrl: "YOUR BOT URL HERE"
