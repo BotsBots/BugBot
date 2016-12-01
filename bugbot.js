@@ -23,6 +23,7 @@ function readSettings() {
 
 function setupLogging() {
   winston.add(winston.transports.File, { filename: 'bugbot.log' });
+  winston.level = 'debug';
   winston.log('debug', 'Starting bugbot. Logging enabled');
   process.on('SIGINT', () => {
     winston.log('debug', 'Bugbot recieved SIGINT. Bye!');
