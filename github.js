@@ -70,7 +70,7 @@ exports.getIssues = (token, owner, repo, callback) => {
 /**
  * Create an issue on a project
  */
-exports.createIssue = (token, owner, repo, title, body, callback) => {
+exports.createIssue = (token, owner, repo, title, body, labels, callback) => {
   let options = {
     url: 'https://api.github.com/repos/' + owner + '/' + repo + '/issues',
     method: 'POST',
@@ -83,7 +83,8 @@ exports.createIssue = (token, owner, repo, title, body, callback) => {
     body: {
       'title': title,
       'body': body
-    }
+    },
+    labels: labels
   };
 
   request(options, (error, response, body) => {

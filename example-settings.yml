@@ -1,3 +1,4 @@
 # configunation file for BugBot
 slack:
 	token: "YOUR SLACK TOKEN HERE"
+	webhookUrl: "YOUR BOT URL HERE"
