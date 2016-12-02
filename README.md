@@ -19,6 +19,7 @@ You will need a github personal access token which can be found in github's sett
 * report - guides the user through creating an issue
 * new feature/feature - walks the user through creating a fetaure as opposed to an issue.
 * help - display help message
+* show log - print the last 10 entries in bugbot's log file
 
 ### Installation/deployment
 

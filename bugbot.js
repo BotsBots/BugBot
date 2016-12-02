@@ -22,7 +22,9 @@ function readSettings() {
 }
 
 function setupLogging() {
-  winston.add(winston.transports.File, { filename: 'bugbot.log' });
+  //configure a log file with a max size of 10MB (10^6 * 10 bytes)
+  winston.add(winston.transports.File,
+    { filename: 'bugbot.log', maxsize: 10000000, maxFiles: 1 });
   winston.level = 'debug';
   winston.log('debug', 'Starting bugbot. Logging enabled');
   process.on('SIGINT', () => {
@@ -40,7 +42,7 @@ function main() {
   let settings = readSettings();
 
   /* start the slack RTM */
-  slack.start(settings.slack.token, settings.slack.webhook);
+  slack.start(settings.slack.token, settings.slack.webhook, winston);
 }
 
 main();

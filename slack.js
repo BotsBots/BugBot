@@ -7,11 +7,14 @@ let Botkit = require('botkit');
 let github = require('./github.js');
 let database = require('./database.js');
 
-exports.start = (token, webhookUrl) => {
+let winston = null; //will be set by start function
+
+exports.start = (token, webhookUrl, logger) => {
   let controller = Botkit.slackbot({
     debug: false,
-    incoming_webhook: {url: webhookUrl }
   });
+
+  winston = logger;
 
   // connect the bot to a stream of messages
   controller.spawn({
@@ -30,6 +33,7 @@ exports.start = (token, webhookUrl) => {
         bot.reply(message, 'You are not currently authenticated with Github. You can type\
   \'authorize\' to begin the authenticate to your github account.');
     });
+    winston.log('debug', 'Help called by: ' + message.user);
   });
 
   /**
@@ -42,6 +46,7 @@ exports.start = (token, webhookUrl) => {
       else
         authorizeUser(bot, message);
     });
+    winston.log('debug', 'Authorize called by: ' + message.user);
   });
 
   /**
@@ -68,6 +73,7 @@ exports.start = (token, webhookUrl) => {
           createIssue(bot, message, token);
         });
     });
+    winston.log('debug', 'New issue called by: ' + message.user);
   });
 
   controller.hears(['report', 'report bug'], ['direct_message', 'direct_mention'], (bot, message) => {
@@ -83,6 +89,7 @@ exports.start = (token, webhookUrl) => {
           reportIssue(bot, message, token);
         });
     });
+    winston.log('debug', 'Report called by: ' + message.user);
   });
 
   controller.hears(['new feature', 'feature'], ['direct_message', 'direct_mention'], (bot, message) => {
@@ -98,6 +105,7 @@ exports.start = (token, webhookUrl) => {
           newFeature(bot, message, token);
         });
     });
+    winston.log('debug', 'New feature called by: ' + message.user);
   });
 
   controller.hears(['revoke', 'revoke access'], ['direct_message'], (bot,message) => {
@@ -111,6 +119,11 @@ exports.start = (token, webhookUrl) => {
       else
         revokeAccess(bot, message);
     });
+    winston.log('debug', 'Revoke called by: ' + message.user);
+  });
+
+  controller.hears(['show log'], ['direct_message'], (bot,message) => {
+    readLog(bot,message);
   });
 
 }
@@ -533,5 +546,23 @@ function revokeAccess(bot, message) {
         }
       });
     });
+  });
+}
+
+/**
+ * Return the last 10 log entries for debug
+ */
+function readLog(bot, message) {
+  let options = {
+    limit: 10,
+    order: 'desc'
+  }
+
+  winston.query(options, function (err, results) {
+    if (err) {
+      throw err;
+    }
+    //reply with the log results
+    bot.reply(message,'Log tail:\n' + JSON.stringify(results.file));
   });
 }
