@@ -7,6 +7,12 @@ is looking for. Bugbot can help with this by asking a specific series of questio
 and then compiling an issue report. It is designed to help
 both technical and non-technical users create more consistent and readable issues.
 
+In addition, chat platforms are available on nearly every device we own. In contrast,
+issue trackers can be difficult to use on mobile devices, or when internet connections
+are slow. If a user's primary machine fails, they can report the issue via their phone.
+If a developer thinks of a potential feature at home when her main computer is not available,
+she can still create the issue on her phone or laptop through BugBot.
+
 ### Usage
 
 You can message a running instance of bugbot with any of the following commands:
@@ -45,3 +51,7 @@ poorly written issues and help users provide more detail.
 We could also detect when a user is confused and provide more guided help. I.E.,
 if a user does not understand instructions the bot should be able to elaborate
 on all of its functions.
+
+Figuring out when a user is attempting to create a duplicate issue, and directing
+them to the existing issue would also be helpful, but I am unsure if the technology
+to dectect duplicates with enough accuracy is currently available.
