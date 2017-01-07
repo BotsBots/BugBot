@@ -203,7 +203,9 @@ function createIssue(bot,message,token) {
   }
 
   let askDescription = function(prevResponse, convo) {
-    convo.ask('Give a description for the issue', (response, convo) => {
+    convo.ask('Give a description for the issue', askCallback);
+
+    function askCallback(response, convo) {
       if (response.text == 'cancel') {
         cancelAction(bot, convo, askDescription);
         convo.next();
@@ -211,18 +213,21 @@ function createIssue(bot,message,token) {
         issue.body = response.text;
 
         github.createIssue(token, issue.owner, issue.repo,
-          issue.title, issue.body, [], (response) => {
-          convo.next();
-          if (response.message == 'Not Found')
-            convo.say('Sorry I could not find the project: ' + issue.owner + '/' + issue.repo);
-          else {
-            //convert from the API url to the clickable url
-            issueUrl = 'https://github.com/' + response.url.split('repos/')[1];
-            convo.say('Thank you! Your issue is available at ' + issueUrl);
-          }
-        });
+          issue.title, issue.body, [], githubCallback);
       }
-    });
+    }
+
+    function githubCallback(response) {
+      convo.next();
+      if (response.message == 'Not Found')
+        convo.say('Sorry I could not find the project: ' + issue.owner + '/' + issue.repo);
+      else {
+        //convert from the API url to the clickable url
+        issueUrl = 'https://github.com/' + response.url.split('repos/')[1];
+        convo.say('Thank you! Your issue is available at ' + issueUrl);
+      }
+    }
+
   }
 
   bot.startConversation(message, askProject);
@@ -342,7 +347,9 @@ function reportIssue(bot, message, token) {
 
   let askOS = function(prevResponse, convo) {
     convo.ask('Now, tell us about the device where the error occurred What \
-    operating system is it running? (I.E., Windows 7, Android, etc)', (response, convo) => {
+    operating system is it running? (I.E., Windows 7, Android, etc)', askCallback);
+
+    function askCallback(response, callback) {
       //error check
       if (response.text == 'cancel') {
         cancelAction(bot, convo, askProject);
@@ -355,18 +362,20 @@ function reportIssue(bot, message, token) {
 
         //now we upload the issue to github
         github.createIssue(token, issue.owner, issue.repo,
-        issue.title, issue.body, ['bug'], (response) => {
-          convo.next();
-          if (response.message == 'Not Found')
-            convo.say('Sorry I could not find the project: ' + issue.owner + '/' + issue.repo);
-          else {
-            //convert from the API url to the clickable url
-            issueUrl = 'https://github.com/' + response.url.split('repos/')[1];
-            convo.say('Thank you! Your issue is available at ' + issueUrl);
-          }
-        });
+          issue.title, issue.body, ['bug'], githubCallback);
       }
-    });
+    }
+
+    function githubCallback(response) {
+      convo.next();
+      if (response.message == 'Not Found')
+        convo.say('Sorry I could not find the project: ' + issue.owner + '/' + issue.repo);
+      else {
+        //convert from the API url to the clickable url
+        issueUrl = 'https://github.com/' + response.url.split('repos/')[1];
+        convo.say('Thank you! Your issue is available at ' + issueUrl);
+      }
+    }
   }
 
   bot.startConversation(message, askProject);
@@ -465,7 +474,9 @@ function newFeature(bot, message, token) {
   }
 
   let askPriority = function(prevResponse, convo) {
-    convo.ask('What priority is this feature?', (response, convo) => {
+    convo.ask('What priority is this feature?', askCallback);
+
+    function askCallback(response, covnvo) {
       //error check
       if (response.text == 'cancel') {
         cancelAction(bot, convo, askProject);
@@ -478,18 +489,23 @@ function newFeature(bot, message, token) {
 
         //now we upload the issue to github
         github.createIssue(token, issue.owner, issue.repo,
-        issue.title, issue.body, [issue.priority, issue.release, 'enhancement'], (response) => {
-          convo.next();
-          if (response.message == 'Not Found')
-            convo.say('Sorry I could not find the project: ' + issue.owner + '/' + issue.repo);
-          else {
-            //convert from the API url to the clickable url
-            issueUrl = 'https://github.com/' + response.url.split('repos/')[1];
-            convo.say('Thank you! Your feature is available at ' + issueUrl);
-          }
-        });
+          issue.title, issue.body, [issue.priority, issue.release, 'enhancement'],
+          githubCallback);
       }
-    });
+    }
+
+    function githubCallback(response) {
+      console.log("called with response: " + response);
+      convo.next();
+      if (response.message == 'Not Found')
+        convo.say('Sorry I could not find the project: ' + issue.owner + '/' + issue.repo);
+      else {
+        //convert from the API url to the clickable url
+        issueUrl = 'https://github.com/' + response.url.split('repos/')[1];
+        convo.say('Thank you! Your feature is available at ' + issueUrl);
+      }
+    }
+
   }
 
   bot.startConversation(message, askProject);
@@ -497,7 +513,7 @@ function newFeature(bot, message, token) {
 
 function authorizeUser(bot, message) {
   bot.startConversation(message, (err, convo) => {
-    convo.say('I will need a github personal access token to create issue on your behalf.\
+    convo.say('I will need a github personal access token to create an issue on your behalf.\
     This token must have repo access enabled');
     convo.next();
 
