@@ -1,0 +1,49 @@
+#English strings for bugbot
+
+#Error messages
+errors:
+   notPrivate: Please message me in a private chat to authorize your user
+   alreadyAuthorized: You are already authorized.
+   notAuthorized: >
+      Sorry, your account does not appear to be authorized with github
+      Please send me the 'authorize' command in a private chat.
+   dbError: >
+      There appears to be an error with my database. My appologies, please
+      contact the maintainer of this bot.
+
+
+#Help messages
+help:
+   help: >
+      Hello, I am BugBot. I can help you report issues to Github
+
+      Type 'new issue' to report an issue or type 'report'
+      for guided issue creation.
+
+      If you want to create a new feature type 'feature'.
+   authorized: >
+      Your user is currently authenticated with Github. You can type
+      'revoke' to revoke your access.
+   notAuthorized: >
+      You are not currently authenticated with Github. You can type
+      'authorize' to begin the authenticate to your github account.
+
+#cancel an action
+cancel:
+   cancelAction: Are you sure you want to cancel?
+   confirm: canceling action
+
+#New issue - strings used by the new issue command
+createIssue:
+   askProject: >
+      What project would you like to report an issue for?
+
+      This should be in the form owner/repo, I.E., octocat/hello-world
+   specifyProject: You must specify a project
+   projectFormat: You need to specify the porject in the format owner/project.
+
+   askTitle: What would you like to title the issue?
+   requireTitle: A title is required
+   titleTooLong: That's a bit long for a title. Can you try to be more concise?
+
+   askDescription: Give a description for the issue

@@ -8,30 +8,29 @@ let github = require('./github.js');
 let database = require('./database.js');
 
 let winston = null; //will be set by start function
+let strings = null;
 
-exports.start = (token, webhookUrl, logger) => {
+
+exports.start = (settings, logger, stringsObject) => {
   let controller = Botkit.slackbot({
     debug: false,
   });
 
   winston = logger;
+  strings = stringsObject;
 
   // connect the bot to a stream of messages
   controller.spawn({
-    'token': token
+    'token': settings.token
   }).startRTM();
 
   controller.hears('help', ['direct_message'], (bot, message) => {
     database.isAuthorized(message.user, (err, authorized) => {
-      bot.reply(message, 'Hello, I am BugBot. I can help you report issues to Github\
-      \nType \'new issue\' to report an issue or type \'report\' for guided issue creation.\
-      \nIf you want to create a new feature type \'feature\'.');
+      bot.reply(message, strings.help.help);
       if (authorized)
-        bot.reply(message, 'You are currently authenticated with Github. You can type\
-  \'revoke\' to revoke your access');
+        bot.reply(message, strings.help.authorized);
       else
-        bot.reply(message, 'You are not currently authenticated with Github. You can type\
-  \'authorize\' to begin the authenticate to your github account.');
+        bot.reply(message, strings.help.notAuthorized);
     });
     winston.log('debug', 'Help called by: ' + message.user);
   });
@@ -42,7 +41,7 @@ exports.start = (token, webhookUrl, logger) => {
   controller.hears('authorize', ['direct_message'], (bot, message) => {
     database.isAuthorized(message.user, (err, authorized) => {
       if (authorized)
-        bot.reply(message, 'You are already authorized.');
+        bot.reply(message, strings.errors.alreadyAuthorized);
       else
         authorizeUser(bot, message);
     });
@@ -53,7 +52,7 @@ exports.start = (token, webhookUrl, logger) => {
    * Prevent user from trying to authorize from a public chat
    */
   controller.hears('authorize', ['mention', 'direct_mention'], (bot,message) => {
-    bot.reply(message, 'Please message me in a private chat to authorize your user');
+    bot.reply(message, strings.errors.notPrivate);
   });
 
 
@@ -63,11 +62,9 @@ exports.start = (token, webhookUrl, logger) => {
   controller.hears('new issue',['direct_message', 'direct_mention'], (bot,message) => {
     database.isAuthorized(message.user, (err, authorized) => {
       if (err)
-        bot.reply(message, 'There appears to be an error with my database. My appologies, please\
-        contact the maintainer of this bot.');
+        bot.reply(message, strings.errors.dbError);
       else if (!authorized)
-        bot.reply(message, 'Sorry, your account does not appear to be authorized with github\
-        \nPlease send me the \'authorize\' command in a private chat.');
+        bot.reply(message, strings.errors.notAuthorized);
       else
         database.getUser(message.user, (err, token, githubUser) => {
           createIssue(bot, message, token);
@@ -79,11 +76,9 @@ exports.start = (token, webhookUrl, logger) => {
   controller.hears(['report', 'report bug'], ['direct_message', 'direct_mention'], (bot, message) => {
     database.isAuthorized(message.user, (err, authorized) => {
       if (err)
-        bot.reply(message, 'There appears to be an error with my database. My appologies, please\
-        contact the maintainer of this bot.');
+        bot.reply(message, strings.errors.dbError);
       else if (!authorized)
-        bot.reply(message, 'Sorry, your account does not appear to be authorized with github\
-        \nPlease send me the \'authorize\' command in a private chat.');
+        bot.reply(message, strings.errors.notAuthorized);
       else
         database.getUser(message.user, (err, token, githubUser) => {
           reportIssue(bot, message, token);
@@ -95,11 +90,9 @@ exports.start = (token, webhookUrl, logger) => {
   controller.hears(['new feature', 'feature'], ['direct_message', 'direct_mention'], (bot, message) => {
     database.isAuthorized(message.user, (err, authorized) => {
       if (err)
-        bot.reply(message, 'There appears to be an error with my database. My appologies, please\
-        contact the maintainer of this bot.');
+        bot.reply(message, strings.errors.dbError);
       else if (!authorized)
-        bot.reply(message, 'Sorry, your account does not appear to be authorized with github\
-        \nPlease send me the \'authorize\' command in a private chat.');
+        bot.reply(message, strings.errors.notAuthorized);
       else
         database.getUser(message.user, (err, token, githubUser) => {
           newFeature(bot, message, token);
@@ -111,11 +104,9 @@ exports.start = (token, webhookUrl, logger) => {
   controller.hears(['revoke', 'revoke access'], ['direct_message'], (bot,message) => {
     database.isAuthorized(message.user, (err, authorized) => {
       if (err)
-        bot.reply(message, 'There appears to be an error with my database. My appologies, please\
-        contact the maintainer of this bot.');
+        bot.reply(message, strings.errors.dbError);
       else if (!authorized)
-        bot.reply(message, 'Your user does not appear to be authorized. Type \'authorize\' \
-        to authorize your user');
+        bot.reply(message, strings.errors.notAuthorized);
       else
         revokeAccess(bot, message);
     });
@@ -133,9 +124,9 @@ exports.start = (token, webhookUrl, logger) => {
  * the callback is what gets called if the user does not confirm the cancellation
  */
 function cancelAction(bot, convo, callback) {
-  convo.ask('Are you sure you want to cancel?', [
+  convo.ask(strings.cancel.cancelAction, [
     { pattern: bot.utterances.yes, callback: (response, convo) => {
-      convo.say('canceling action');
+      convo.say(strings.cancel.corfirm);
       convo.next();
     }},
     { pattern: bot.utterances.no, callback: (response, convo) => {
@@ -152,19 +143,18 @@ function createIssue(bot,message,token) {
   let issue = {};
 
   let askProject = function(err, convo) {
-    convo.ask('What project would you like to report an issue for?\n\
-  This should be in the form owner/repo, I.E., octocat/hello-world', (response, convo) => {
+    convo.ask(strings.createIssue.askProject, (response, convo) => {
 
       //error check
       if (response.text == 'cancel') {
         cancelAction(bot, convo, askProject);
         convo.next();
       } else if (response.text.length == 0) {
-        convo.say('You must specify a project');
+        convo.say(strings.createIssue.specifyProject);
         askProject(null, convo);
         convo.next();
       } else if (response.text.indexOf('/') == -1 || response.text.split('/').length != 2) {
-        convo.say('You need to specify the porject in the format owner/project.');
+        convo.say(strings.createIssue.projectFormat);
         askProject(null, convo);
         convo.next();
       } else {
@@ -180,18 +170,18 @@ function createIssue(bot,message,token) {
   }
 
   let askTitle = function(prevResponse, convo) {
-    convo.ask('What would you like to title the issue?', (response, convo) => {
+    convo.ask(strings.createIssue.askTitle, (response, convo) => {
 
       //error check
       if (response.text == 'cancel') {
         cancelAction(bot, convo, askTitle);
         convo.next();
       } else if (response.text.length == 0) {
-        convo.say('A title is required');
+        convo.say(strings.createIssue.requireTitle);
         askTitle(response, convo);
         convo.next();
       } else if (response.text.length > 80) {
-        convo.say('That\'s a bit long for a title. Can you try to be more concise?');
+        convo.say(strings.createIssue.titleTooLong);
         askTitle(response, convo);
         convo.next();
       } else {
@@ -203,7 +193,7 @@ function createIssue(bot,message,token) {
   }
 
   let askDescription = function(prevResponse, convo) {
-    convo.ask('Give a description for the issue', askCallback);
+    convo.ask(strings.createIssue.askDescription, askCallback);
 
     function askCallback(response, convo) {
       if (response.text == 'cancel') {
@@ -386,9 +376,10 @@ function reportIssue(bot, message, token) {
  * by asking specific questions.
  */
 function newFeature(bot, message, token) {
-  let issue = {};
+  bot.startConversation(message, askProject);
 
-  let askProject = function(err, convo) {
+  let issue = {};
+  function askProject(err, convo) {
     convo.ask('What project would you like to create a feature for?\n\
   This should be in the form owner/repo, I.E., octocat/hello-world', (response, convo) => {
 
@@ -416,7 +407,7 @@ function newFeature(bot, message, token) {
     });
   }
 
-  let askTitle = function(prevResponse, convo) {
+  function askTitle(prevResponse, convo) {
     convo.ask('What would you like to title the feature?', (response, convo) => {
 
       //error check
@@ -439,7 +430,7 @@ function newFeature(bot, message, token) {
     });
   }
 
-  let askDescription = function(prevResponse, convo) {
+  function askDescription(prevResponse, convo) {
     convo.ask('Give a description of what the feature should do.', (response, convo) => {
 
       //error check
@@ -458,7 +449,7 @@ function newFeature(bot, message, token) {
     });
   }
 
-  let askRelease = function(prevResponse, convo) {
+  function askRelease(prevResponse, convo) {
     convo.ask('What release or interation should this be complete by?', (response, convo) => {
 
       //error check
@@ -473,7 +464,7 @@ function newFeature(bot, message, token) {
     });
   }
 
-  let askPriority = function(prevResponse, convo) {
+  function askPriority(prevResponse, convo) {
     convo.ask('What priority is this feature?', askCallback);
 
     function askCallback(response, covnvo) {
@@ -505,10 +496,7 @@ function newFeature(bot, message, token) {
         convo.say('Thank you! Your feature is available at ' + issueUrl);
       }
     }
-
   }
-
-  bot.startConversation(message, askProject);
 }
 
 function authorizeUser(bot, message) {

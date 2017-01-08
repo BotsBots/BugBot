@@ -36,3 +36,6 @@ jspm_packages
 #token files
 settings.yml
 userdb
+
+#stuff from my IDE
+.buildconfig

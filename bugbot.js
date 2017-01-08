@@ -12,10 +12,10 @@ const process = require('process');
 const github = require('./github.js');
 const slack = require('./slack.js');
 
-/* parses the settings.yml file */
-function readSettings() {
+/* parses a yaml file */
+function readYaml(fileName) {
   try {
-    return yaml.safeLoad(file.readFileSync('./settings.yml', 'utf-8'));
+    return yaml.safeLoad(file.readFileSync(fileName, 'utf-8'));
   } catch(exception) {
     winston.log(exception);
   }
@@ -39,10 +39,11 @@ function setupLogging() {
 
 function main() {
   setupLogging();
-  let settings = readSettings();
+  let settings = readYaml('./settings.yml');
+  let strings = readYaml('./strings-en.yml');
 
   /* start the slack RTM */
-  slack.start(settings.slack.token, settings.slack.webhook, winston);
+  slack.start(settings.slack, winston, strings);
 }
 
 main();
