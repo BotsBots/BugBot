@@ -11,7 +11,6 @@ errors:
       There appears to be an error with my database. My appologies, please
       contact the maintainer of this bot.
 
-
 #Help messages
 help:
    help: >
@@ -33,7 +32,8 @@ cancel:
    cancelAction: Are you sure you want to cancel?
    confirm: canceling action
 
-#New issue - strings used by the new issue command
+#creating issues
+#note that this covers multiple commands new issue, report and feature
 createIssue:
    askProject: >
       What project would you like to report an issue for?
@@ -41,9 +41,52 @@ createIssue:
       This should be in the form owner/repo, I.E., octocat/hello-world
    specifyProject: You must specify a project
    projectFormat: You need to specify the porject in the format owner/project.
-
    askTitle: What would you like to title the issue?
    requireTitle: A title is required
    titleTooLong: That's a bit long for a title. Can you try to be more concise?
-
    askDescription: Give a description for the issue
+   invalidProject: "Sorry I could not find the project: "
+   issueAvailable: "Thank you! Your issue is available at "
+
+   askReproduce: >
+      What were you doing when the issue occurred?
+      Try to help the troubleshooter recreate the issue.
+   askCrash: >
+      Now, what happened when the program crashed?
+      Be sure to include any error codes.
+   required: This is required
+   askVersion: What version of the software were you running?
+   askOS: >
+      Now, tell us about the device where the error occurred What
+      operating system is it running? (I.E., Windows 7, Android, etc)
+
+#specific to creating a feature
+createFeature:
+   askTitle: What would you like to title the feature?
+   askDescription: Give a description of what the feature should do.
+   askRelease: What release or interation should this be complete by?
+   askPriority: What priority is this feature?
+   featureAvailable: "Thank you! Your feature is available at "
+
+#strings for authorization and revoking
+authorizeUser:
+   provideToken: >
+      I will need a github personal access token to create an issue on
+      your behalf. This token must have repo access enabled.
+
+      Please provide your token below
+   invalidToken: Your token appears to be invalid
+   cannotSave: Sorry, I was unable to save your token.
+   authorized: "You are now authenticated as the github user: "
+
+   askRevoke: "Are you sure you want to revoke access to the github account: "
+   revokeDBError: >
+      Your access could not be revoked due to a database error.
+      Plase contact the maintainer of this bot
+   revokeError: >
+      Your user did not appear to be authorized. This is a bug
+      please contact the maintainer of this bot
+   revoked: >
+      Access revoked. Send me an 'authorize' message to reconnect
+      to your github account
+   neverMind: Never mind then

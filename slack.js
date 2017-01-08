@@ -59,7 +59,7 @@ exports.start = (settings, logger, stringsObject) => {
   /**
    * Executes when the controller hears the message new_issue
    */
-  controller.hears('new issue',['direct_message', 'direct_mention'], (bot,message) => {
+  controller.hears(['new issue', 'issue'],['direct_message', 'direct_mention'], (bot,message) => {
     database.isAuthorized(message.user, (err, authorized) => {
       if (err)
         bot.reply(message, strings.errors.dbError);
@@ -210,11 +210,11 @@ function createIssue(bot,message,token) {
     function githubCallback(response) {
       convo.next();
       if (response.message == 'Not Found')
-        convo.say('Sorry I could not find the project: ' + issue.owner + '/' + issue.repo);
+        convo.say(strings.createIssue.invalidProject + issue.owner + '/' + issue.repo);
       else {
         //convert from the API url to the clickable url
         issueUrl = 'https://github.com/' + response.url.split('repos/')[1];
-        convo.say('Thank you! Your issue is available at ' + issueUrl);
+        convo.say(strings.createIssue.issueAvailable + issueUrl);
       }
     }
 
@@ -228,22 +228,22 @@ function createIssue(bot,message,token) {
  * by asking specific questions.
  */
 function reportIssue(bot, message, token) {
-  let issue = {};
+  bot.startConversation(message, askProject);
 
-  let askProject = function(err, convo) {
-    convo.ask('What project would you like to report an issue for?\n\
-  This should be in the form owner/repo, I.E., octocat/hello-world', (response, convo) => {
+  let issue = {};
+  function askProject(err, convo) {
+    convo.ask(strings.createIssue.askProject, (response, convo) => {
 
       //error check
       if (response.text == 'cancel') {
         cancelAction(bot, convo, askProject);
         convo.next();
       } else if (response.text.length == 0) {
-        convo.say('You must specify a project');
+        convo.say(strings.createIssue.specifyProject);
         askProject(null, convo);
         convo.next();
       } else if (response.text.indexOf('/') == -1 || response.text.split('/').length != 2) {
-        convo.say('You need to specify the porject in the format owner/project.');
+        convo.say(strings.createIssue.projectFormat);
         askProject(null, convo);
         convo.next();
       } else {
@@ -259,18 +259,18 @@ function reportIssue(bot, message, token) {
   }
 
   let askTitle = function(prevResponse, convo) {
-    convo.ask('What would you like to title the issue?', (response, convo) => {
+    convo.ask(strings.createIssue.askTitle, (response, convo) => {
 
       //error check
       if (response.text == 'cancel') {
         cancelAction(bot, convo, askTitle);
         convo.next();
       } else if (response.text.length == 0) {
-        convo.say('A title is required');
+        convo.say(strings.createIssue.requireTitle);
         askTitle(response, convo);
         convo.next();
       } else if (response.text.length > 80) {
-        convo.say('That\'s a bit long for a title. Can you try to be more concise?');
+        convo.say(strings.createIssue.titleTooLong);
         askTitle(response, convo);
         convo.next();
       } else {
@@ -282,15 +282,14 @@ function reportIssue(bot, message, token) {
   }
 
   let askReproduce = function(prevResponse, convo) {
-    convo.ask('What were you doing when the issue occurred?\
-    Try to help the troubleshooter recreate the issue.', (response, convo) => {
+    convo.ask(strings.createIssue.askReproduce, (response, convo) => {
 
       //error check
       if (response.text == 'cancel') {
         cancelAction(bot, convo, askProject);
         convo.next();
       } else if (response.text.length == 0) {
-        convo.say('This is required.');
+        convo.say(strings.createIssue.required);
         askReproduce(null, convo);
         convo.next();
       } else {
@@ -302,14 +301,14 @@ function reportIssue(bot, message, token) {
   }
 
   let askCrash = function(prevResponse, convo) {
-    convo.ask('Now, what happened when the program crashed? Be sure to include any error codes.', (response, convo) => {
+    convo.ask(strings.createIssue.askReproduce, (response, convo) => {
 
       //error check
       if (response.text == 'cancel') {
         cancelAction(bot, convo, askProject);
         convo.next();
       } else if (response.text.length == 0) {
-        convo.say('This is required.');
+        convo.say(strings.createIssue.required);
         askCrash(null, convo);
         convo.next();
       } else {
@@ -321,7 +320,7 @@ function reportIssue(bot, message, token) {
   }
 
   let askVersion = function(prevResponse, convo) {
-    convo.ask('What version of the software were you running?.', (response, convo) => {
+    convo.ask(strings.createIssue.askVersion, (response, convo) => {
 
       //error check
       if (response.text == 'cancel') {
@@ -336,8 +335,7 @@ function reportIssue(bot, message, token) {
   }
 
   let askOS = function(prevResponse, convo) {
-    convo.ask('Now, tell us about the device where the error occurred What \
-    operating system is it running? (I.E., Windows 7, Android, etc)', askCallback);
+    convo.ask(strings.createIssue.askOS, askCallback);
 
     function askCallback(response, callback) {
       //error check
@@ -359,16 +357,14 @@ function reportIssue(bot, message, token) {
     function githubCallback(response) {
       convo.next();
       if (response.message == 'Not Found')
-        convo.say('Sorry I could not find the project: ' + issue.owner + '/' + issue.repo);
+        convo.say(strings.createIssue.invalidProject + issue.owner + '/' + issue.repo);
       else {
         //convert from the API url to the clickable url
         issueUrl = 'https://github.com/' + response.url.split('repos/')[1];
-        convo.say('Thank you! Your issue is available at ' + issueUrl);
+        convo.say(strings.createIssue.issueAvailable + issueUrl);
       }
     }
   }
-
-  bot.startConversation(message, askProject);
 }
 
 /**
@@ -380,19 +376,18 @@ function newFeature(bot, message, token) {
 
   let issue = {};
   function askProject(err, convo) {
-    convo.ask('What project would you like to create a feature for?\n\
-  This should be in the form owner/repo, I.E., octocat/hello-world', (response, convo) => {
+    convo.ask(strings.createIssue.askProject, (response, convo) => {
 
       //error check
       if (response.text == 'cancel') {
         cancelAction(bot, convo, askProject);
         convo.next();
       } else if (response.text.length == 0) {
-        convo.say('You must specify a project');
+        convo.say(strings.createIssue.specifyProject);
         askProject(null, convo);
         convo.next();
       } else if (response.text.indexOf('/') == -1 || response.text.split('/').length != 2) {
-        convo.say('You need to specify the porject in the format owner/project.');
+        convo.say(strings.createIssue.projectFormat);
         askProject(null, convo);
         convo.next();
       } else {
@@ -408,18 +403,18 @@ function newFeature(bot, message, token) {
   }
 
   function askTitle(prevResponse, convo) {
-    convo.ask('What would you like to title the feature?', (response, convo) => {
+    convo.ask(strings.createFeature.askTitle, (response, convo) => {
 
       //error check
       if (response.text == 'cancel') {
         cancelAction(bot, convo, askTitle);
         convo.next();
       } else if (response.text.length == 0) {
-        convo.say('A title is required');
+        convo.say(strings.createIssue.requireTitle);
         askTitle(response, convo);
         convo.next();
       } else if (response.text.length > 80) {
-        convo.say('That\'s a bit long for a title. Can you try to be more concise?');
+        convo.say(strings.createIssue.titleTooLong);
         askTitle(response, convo);
         convo.next();
       } else {
@@ -431,14 +426,14 @@ function newFeature(bot, message, token) {
   }
 
   function askDescription(prevResponse, convo) {
-    convo.ask('Give a description of what the feature should do.', (response, convo) => {
+    convo.ask(strings.createFeature.askDescription, (response, convo) => {
 
       //error check
       if (response.text == 'cancel') {
         cancelAction(bot, convo, askProject);
         convo.next();
       } else if (response.text.length == 0) {
-        convo.say('This is required.');
+        convo.say(strings.createIssue.required);
         askDescription(null, convo);
         convo.next();
       } else {
@@ -450,7 +445,7 @@ function newFeature(bot, message, token) {
   }
 
   function askRelease(prevResponse, convo) {
-    convo.ask('What release or interation should this be complete by?', (response, convo) => {
+    convo.ask(strings.createFeature.askRelease, (response, convo) => {
 
       //error check
       if (response.text == 'cancel') {
@@ -465,7 +460,7 @@ function newFeature(bot, message, token) {
   }
 
   function askPriority(prevResponse, convo) {
-    convo.ask('What priority is this feature?', askCallback);
+    convo.ask(strings.createFeature.askPriority, askCallback);
 
     function askCallback(response, covnvo) {
       //error check
@@ -489,11 +484,11 @@ function newFeature(bot, message, token) {
       console.log("called with response: " + response);
       convo.next();
       if (response.message == 'Not Found')
-        convo.say('Sorry I could not find the project: ' + issue.owner + '/' + issue.repo);
+        convo.say(strings.createIssue.invalidProject + issue.owner + '/' + issue.repo);
       else {
         //convert from the API url to the clickable url
         issueUrl = 'https://github.com/' + response.url.split('repos/')[1];
-        convo.say('Thank you! Your feature is available at ' + issueUrl);
+        convo.say(strings.createFeature.featureAvailable + issueUrl);
       }
     }
   }
@@ -501,21 +496,17 @@ function newFeature(bot, message, token) {
 
 function authorizeUser(bot, message) {
   bot.startConversation(message, (err, convo) => {
-    convo.say('I will need a github personal access token to create an issue on your behalf.\
-    This token must have repo access enabled');
-    convo.next();
-
-    convo.ask('Please provide your token below', (response, convo) => {
+    convo.ask(strings.authorizeUser.provideToken, (response, convo) => {
       token = response.text;
 
       github.getAuthUser(token, (response) => {
         convo.next();
         if (response.message == 'Bad credentials')
-          convo.say('Your token appears to be invalid');
+          convo.say(strings.authorizeUser.invalidToken);
         else {
           database.saveUser(message.user, token, response.login, (err, doc) => {
-            if (err) convo.say('Sorry, I was unable to save your token.');
-            else convo.say("You are now authenticated as the github user: " + response.login);
+            if (err) convo.say(strings.authorizeUser.cannotSave);
+            else convo.say(strings.authorizeUser.authorized + response.login);
           });
         }
       });
@@ -529,24 +520,21 @@ function authorizeUser(bot, message) {
 function revokeAccess(bot, message) {
   database.getUser(message.user, (err, apiKey, githubUser) => {
     bot.startConversation(message, (err, convo) => {
-      convo.ask('Are you sure you want to revoke access to the github account:' + githubUser,
+      convo.ask(strings.authorizeUser.askRevoke + githubUser,
         (response, convo) => {
 
         convo.next();
         if (response.text == 'yes' || response.text == 'y') {
           database.revokeAccess(message.user, (err, numRemoved) => {
             if (err)
-              convo.say('Your access could not be revoked due to a database error\
-            Plase contact the maintainer of this bot.');
+              convo.say(strings.authorizeUser.revokeDBError);
             if (numRemoved == 0)
-              convo.say('Your user did not appear to be authorized. This is a bug\
-            please contact the maintainer of this bot');
+              convo.say(strings.authorizeUser.revokeError);
             else
-              convo.say('Access revoked. Send me an \'authorize\' message to reconnect\
-            to your github account.');
+              convo.say(strings.authorizeUser.revokeError);
           });
         } else {
-          convo.say('Never mind then');
+          convo.say(strings.authorizeUser.neverMind);
         }
       });
     });
